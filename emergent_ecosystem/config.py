@@ -110,17 +110,6 @@ class VisualizationConfig:
                 'mystic': (0.6, 0.2, 0.8)
             }
 
-@property
-def species_configs(self) -> Dict[str, Any]:
-    """Add missing species_configs property"""
-    return {
-        'predator': {'max_age': 1000, 'base_aggression': 0.8},
-        'herbivore': {'max_age': 800, 'base_aggression': 0.2},
-        'scavenger': {'max_age': 600, 'base_aggression': 0.4},
-        'mystic': {'max_age': 1200, 'base_aggression': 0.1}
-    }
-
-
 @dataclass
 class Config:
     """Main configuration container that combines all subsystem configs"""
@@ -148,6 +137,16 @@ class Config:
             self.evolution = EvolutionConfig()
         if self.visualization is None:
             self.visualization = VisualizationConfig()
+    
+    @property
+    def species_configs(self) -> Dict[str, Any]:
+        """Species-specific configuration parameters"""
+        return {
+            'predator': {'max_age': 1000, 'base_aggression': 0.8},
+            'herbivore': {'max_age': 800, 'base_aggression': 0.2},
+            'scavenger': {'max_age': 600, 'base_aggression': 0.4},
+            'mystic': {'max_age': 1200, 'base_aggression': 0.1}
+        }
     
     # Legacy compatibility - provide direct access to commonly used parameters
     @property

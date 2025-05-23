@@ -45,23 +45,68 @@ This project implements a complex adaptive system where artificial agents develo
 - **Statistics Tracking**: Comprehensive metrics collection and trend analysis
 - **Visualization System**: Real-time multi-panel displays with interactive features
 
+### Performance Optimizations
+
+- **Spatial Indexing**: O(n) neighbor finding using spatial hash grids
+- **Memory Management**: Automatic cleanup and optimization of data structures
+- **Error Handling**: Robust error recovery and logging system
+- **Performance Monitoring**: Real-time performance metrics and optimization
+
 ## Installation
 
-1. Clone the repository:
+### Prerequisites
+
+- Python 3.8 or higher
+- Git (for cloning the repository)
+
+### Setup Instructions
+
+1. **Clone the repository:**
 ```bash
 git clone <repository-url>
 cd emergent-intelligence-ecosystem
 ```
 
-2. Install dependencies:
+2. **Create and activate a virtual environment:**
+
+**On Windows:**
+```bash
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+```
+
+**On macOS/Linux:**
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+3. **Install dependencies:**
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Run the simulation:
+4. **Verify installation:**
+```bash
+python test_performance_improvements.py
+```
+
+5. **Run the simulation:**
 ```bash
 python -m emergent_ecosystem.main
 ```
+
+### Dependencies
+
+The simulation requires the following packages:
+
+- **Core**: numpy, scipy, networkx
+- **Visualization**: matplotlib, seaborn
+- **Data Analysis**: pandas, scikit-learn
+- **Performance**: numba, joblib
+- **Monitoring**: psutil, tqdm
+
+All dependencies are automatically installed via `requirements.txt`.
 
 ## Usage
 
@@ -83,6 +128,22 @@ for step in range(1000):
     print(f"Step {step}: Population {stats.get('population_size', 0)}")
 ```
 
+### Performance Testing
+
+Run the comprehensive test suite to validate all improvements:
+
+```bash
+python test_performance_improvements.py
+```
+
+This will test:
+- ✅ Configuration fixes
+- ✅ Performance optimizations
+- ✅ Error handling improvements
+- ✅ Memory management
+- ✅ Dependency validation
+- ✅ Simulation stability
+
 ### Command Line Interface
 
 The simulation includes a comprehensive CLI with multiple configuration profiles:
@@ -103,9 +164,9 @@ python -m emergent_ecosystem.main --steps 5000 --seed 42 --verbose
 
 ### Configuration Profiles
 
-- **Demo**: Interactive visualization with moderate population (50 agents)
-- **Research**: Detailed tracking and analysis (100 agents)
-- **Performance**: Optimized for large-scale simulations (200+ agents)
+- **Demo**: Interactive visualization with moderate population (60 agents)
+- **Research**: Detailed tracking and analysis (120 agents)
+- **Performance**: Optimized for large-scale simulations (40 agents, fast updates)
 
 ### Advanced Usage
 
@@ -118,9 +179,9 @@ from emergent_ecosystem import (
 
 # Custom configuration
 config = Config()
-config.max_population = 150
-config.width = 1000
-config.height = 1000
+config.simulation.max_population = 150
+config.simulation.width = 1000
+config.simulation.height = 1000
 
 # Create simulation
 simulation = EmergentIntelligenceSimulation(config)

@@ -10,6 +10,8 @@ import networkx as nx
 from collections import defaultdict, deque
 from typing import Dict, List, Set, Tuple, Optional
 
+from ..core.error_handling import safe_community_detection, safe_centrality_calculation, error_handler, safe_execute
+
 
 class SocialRelationship:
     """Individual social relationship with history and dynamics"""
@@ -96,6 +98,9 @@ class SocialNetwork:
         self.network_history = []
         self.community_stability = defaultdict(int)
         
+        # Performance optimization: limit network history
+        self.max_history_length = 100
+        
     def add_individual(self, individual_id: int):
         """Add individual to social network"""
         if individual_id not in self.relationships:
@@ -103,230 +108,294 @@ class SocialNetwork:
             self.interaction_graph.add_node(individual_id)
     
     def remove_individual(self, individual_id: int):
-        """Remove individual from social network"""
-        if individual_id in self.relationships:
-            # Remove all relationships involving this individual
-            del self.relationships[individual_id]
-            
-            # Remove from others' relationships
-            for other_relationships in self.relationships.values():
-                if individual_id in other_relationships:
-                    del other_relationships[individual_id]
-            
-            # Remove from graph
-            if self.interaction_graph.has_node(individual_id):
-                self.interaction_graph.remove_node(individual_id)
-            
-            # Remove from leaders
-            self.leaders.discard(individual_id)
+        """Remove individual from social network with error handling"""
+        try:
+            if individual_id in self.relationships:
+                # Remove all relationships involving this individual
+                del self.relationships[individual_id]
+                
+                # Remove from others' relationships
+                for other_relationships in self.relationships.values():
+                    if individual_id in other_relationships:
+                        del other_relationships[individual_id]
+                
+                # Remove from graph
+                if self.interaction_graph.has_node(individual_id):
+                    self.interaction_graph.remove_node(individual_id)
+                
+                # Remove from leaders
+                self.leaders.discard(individual_id)
+                
+        except Exception as e:
+            error_handler.handle_social_network_error('remove_individual', e)
     
     def update_relationship(self, id1: int, id2: int, interaction_type: str, 
                           success: bool, time_step: int, context: str = None):
-        """Update relationship based on interaction"""
-        # Ensure both individuals exist in network
-        self.add_individual(id1)
-        self.add_individual(id2)
-        
-        # Update relationship from id1's perspective
-        if id2 not in self.relationships[id1]:
-            self.relationships[id1][id2] = SocialRelationship(id2)
-        
-        rel = self.relationships[id1][id2]
-        rel.update_from_interaction(interaction_type, success, time_step, context)
-        
-        # Update relationship from id2's perspective (symmetric for most interactions)
-        if interaction_type in ['cooperation', 'communication', 'help']:
-            if id1 not in self.relationships[id2]:
-                self.relationships[id2][id1] = SocialRelationship(id1)
+        """Update relationship based on interaction with error handling"""
+        try:
+            # Ensure both individuals exist in network
+            self.add_individual(id1)
+            self.add_individual(id2)
             
-            rel2 = self.relationships[id2][id1]
-            rel2.update_from_interaction(interaction_type, success, time_step, context)
-        
-        # Update interaction graph
-        weight = rel.get_relationship_value()
-        if self.interaction_graph.has_edge(id1, id2):
-            self.interaction_graph[id1][id2]['weight'] = weight
-            self.interaction_graph[id1][id2]['interactions'] += 1
-        else:
-            self.interaction_graph.add_edge(id1, id2, weight=weight, interactions=1)
-        
-        # For symmetric relationships, update reverse edge
-        if interaction_type in ['cooperation', 'communication', 'help']:
-            rel2 = self.relationships[id2][id1]
-            weight2 = rel2.get_relationship_value()
-            if self.interaction_graph.has_edge(id2, id1):
-                self.interaction_graph[id2][id1]['weight'] = weight2
-                self.interaction_graph[id2][id1]['interactions'] += 1
+            # Update relationship from id1's perspective
+            if id2 not in self.relationships[id1]:
+                self.relationships[id1][id2] = SocialRelationship(id2)
+            
+            rel = self.relationships[id1][id2]
+            rel.update_from_interaction(interaction_type, success, time_step, context)
+            
+            # Update relationship from id2's perspective (symmetric for most interactions)
+            if interaction_type in ['cooperation', 'communication', 'help']:
+                if id1 not in self.relationships[id2]:
+                    self.relationships[id2][id1] = SocialRelationship(id1)
+                
+                rel2 = self.relationships[id2][id1]
+                rel2.update_from_interaction(interaction_type, success, time_step, context)
+            
+            # Update interaction graph
+            weight = rel.get_relationship_value()
+            if self.interaction_graph.has_edge(id1, id2):
+                self.interaction_graph[id1][id2]['weight'] = weight
+                self.interaction_graph[id1][id2]['interactions'] += 1
             else:
-                self.interaction_graph.add_edge(id2, id1, weight=weight2, interactions=1)
+                self.interaction_graph.add_edge(id1, id2, weight=weight, interactions=1)
+            
+            # For symmetric relationships, update reverse edge
+            if interaction_type in ['cooperation', 'communication', 'help']:
+                rel2 = self.relationships[id2][id1]
+                weight2 = rel2.get_relationship_value()
+                if self.interaction_graph.has_edge(id2, id1):
+                    self.interaction_graph[id2][id1]['weight'] = weight2
+                    self.interaction_graph[id2][id1]['interactions'] += 1
+                else:
+                    self.interaction_graph.add_edge(id2, id1, weight=weight2, interactions=1)
+                    
+        except Exception as e:
+            error_handler.handle_social_network_error('update_relationship', e)
     
     def get_relationship_strength(self, id1: int, id2: int) -> float:
         """Get relationship strength between two individuals"""
-        if id1 in self.relationships and id2 in self.relationships[id1]:
-            return self.relationships[id1][id2].strength
-        return 0.0
+        try:
+            if id1 in self.relationships and id2 in self.relationships[id1]:
+                return self.relationships[id1][id2].strength
+            return 0.0
+        except Exception as e:
+            error_handler.handle_social_network_error('get_relationship_strength', e)
+            return 0.0
     
     def get_relationship_trust(self, id1: int, id2: int) -> float:
         """Get trust level between two individuals"""
-        if id1 in self.relationships and id2 in self.relationships[id1]:
-            return self.relationships[id1][id2].trust
-        return 0.0
+        try:
+            if id1 in self.relationships and id2 in self.relationships[id1]:
+                return self.relationships[id1][id2].trust
+            return 0.0
+        except Exception as e:
+            error_handler.handle_social_network_error('get_relationship_trust', e)
+            return 0.0
     
     def get_friends(self, individual_id: int, min_strength: float = 0.6) -> List[int]:
         """Get list of friends for an individual"""
-        friends = []
-        if individual_id in self.relationships:
-            for other_id, rel in self.relationships[individual_id].items():
-                if rel.relationship_type == 'friend' or rel.strength >= min_strength:
-                    friends.append(other_id)
-        return friends
+        try:
+            friends = []
+            if individual_id in self.relationships:
+                for other_id, rel in self.relationships[individual_id].items():
+                    if rel.relationship_type == 'friend' or rel.strength >= min_strength:
+                        friends.append(other_id)
+            return friends
+        except Exception as e:
+            error_handler.handle_social_network_error('get_friends', e)
+            return []
     
     def get_rivals(self, individual_id: int) -> List[int]:
         """Get list of rivals for an individual"""
-        rivals = []
-        if individual_id in self.relationships:
-            for other_id, rel in self.relationships[individual_id].items():
-                if rel.relationship_type == 'rival':
-                    rivals.append(other_id)
-        return rivals
+        try:
+            rivals = []
+            if individual_id in self.relationships:
+                for other_id, rel in self.relationships[individual_id].items():
+                    if rel.relationship_type == 'rival':
+                        rivals.append(other_id)
+            return rivals
+        except Exception as e:
+            error_handler.handle_social_network_error('get_rivals', e)
+            return []
     
     def decay_relationships(self, time_step: int, decay_rate: float = 0.02):
-        """Decay unused relationships over time"""
-        relationships_to_remove = []
-        
-        for individual_id, relationships in self.relationships.items():
-            for other_id, rel in list(relationships.items()):
-                time_since_interaction = time_step - rel.last_interaction_time
-                
-                if time_since_interaction > 100:  # Haven't interacted recently
-                    rel.decay(decay_rate)
-                    
-                    # Remove very weak relationships
-                    if rel.strength < 0.1 and rel.trust < 0.1:
-                        relationships_to_remove.append((individual_id, other_id))
-        
-        # Remove weak relationships
-        for id1, id2 in relationships_to_remove:
-            if id1 in self.relationships and id2 in self.relationships[id1]:
-                del self.relationships[id1][id2]
+        """Decay unused relationships over time with optimized performance"""
+        try:
+            relationships_to_remove = []
             
-            if self.interaction_graph.has_edge(id1, id2):
-                self.interaction_graph.remove_edge(id1, id2)
+            for individual_id, relationships in self.relationships.items():
+                for other_id, rel in list(relationships.items()):
+                    time_since_interaction = time_step - rel.last_interaction_time
+                    
+                    # Apply decay
+                    if time_since_interaction > 10:  # Only decay if no recent interaction
+                        rel.decay(decay_rate)
+                    
+                    # Mark weak relationships for removal
+                    if rel.strength < 0.1 and time_since_interaction > 50:
+                        relationships_to_remove.append((individual_id, other_id))
+            
+            # Remove weak relationships to optimize memory
+            for id1, id2 in relationships_to_remove:
+                if id1 in self.relationships and id2 in self.relationships[id1]:
+                    del self.relationships[id1][id2]
+                    
+                    # Remove from graph if edge exists
+                    if self.interaction_graph.has_edge(id1, id2):
+                        self.interaction_graph.remove_edge(id1, id2)
+                        
+        except Exception as e:
+            error_handler.handle_social_network_error('decay_relationships', e)
     
     def detect_communities(self, min_community_size: int = 3):
-        """Detect communities using network analysis"""
-        if len(self.interaction_graph.nodes()) < min_community_size:
-            self.communities = []
-            return
-        
+        """Detect communities using improved error handling"""
         try:
-            # Convert to undirected graph for community detection
+            # Create undirected graph for community detection
             undirected_graph = self.interaction_graph.to_undirected()
             
-            # Remove weak edges
+            # Filter weak edges to improve community detection
             edges_to_remove = []
             for u, v, data in undirected_graph.edges(data=True):
-                if data.get('weight', 0) < 0.3:
+                if data.get('weight', 0) < 0.3:  # Remove weak connections
                     edges_to_remove.append((u, v))
             
-            undirected_graph.remove_edges_from(edges_to_remove)
+            for edge in edges_to_remove:
+                if undirected_graph.has_edge(edge[0], edge[1]):
+                    undirected_graph.remove_edge(edge[0], edge[1])
             
-            # Detect communities
-            try:
-                communities = list(nx.community.greedy_modularity_communities(undirected_graph))
-            except AttributeError:
-                # Fallback for older NetworkX versions
-                communities = []
-                        
+            # Use safe community detection
+            communities = safe_community_detection(undirected_graph)
+            
             # Filter communities by minimum size
-            self.communities = [community for community in communities 
-                              if len(community) >= min_community_size]
+            self.communities = [
+                community for community in communities 
+                if len(community) >= min_community_size
+            ]
             
-            # Track community stability
+            # Update community stability tracking
             for community in self.communities:
-                community_id = tuple(sorted(community))
-                self.community_stability[community_id] += 1
+                community_key = tuple(sorted(community))
+                self.community_stability[community_key] += 1
                 
-        except Exception:
+        except Exception as e:
+            error_handler.handle_social_network_error('detect_communities', e)
             self.communities = []
     
     def identify_leaders(self, min_influence_threshold: float = 0.6):
-        """Identify influential individuals in the network"""
-        self.leaders.clear()
-        self.influence_network.clear()
-        
-        if len(self.interaction_graph.nodes()) == 0:
-            return
-        
+        """Identify leaders using safe centrality calculations"""
         try:
-            # Calculate various centrality measures
-            degree_centrality = nx.degree_centrality(self.interaction_graph)
-            betweenness_centrality = nx.betweenness_centrality(self.interaction_graph)
+            self.leaders.clear()
             
-            # Calculate influence scores
-            for node in self.interaction_graph.nodes():
-                # Combine different centrality measures
-                degree_score = degree_centrality.get(node, 0)
-                betweenness_score = betweenness_centrality.get(node, 0)
+            if len(self.interaction_graph.nodes()) == 0:
+                return
+            
+            # Calculate multiple centrality measures safely
+            betweenness = safe_centrality_calculation(self.interaction_graph, 'betweenness')
+            degree = safe_centrality_calculation(self.interaction_graph, 'degree')
+            
+            # Combine centrality measures to identify leaders
+            for node_id in self.interaction_graph.nodes():
+                betweenness_score = betweenness.get(node_id, 0)
+                degree_score = degree.get(node_id, 0)
                 
-                # Weight by relationship quality
-                relationship_quality = 0
-                if node in self.relationships:
-                    relationships = self.relationships[node].values()
-                    if relationships:
-                        relationship_quality = np.mean([rel.get_relationship_value() 
-                                                      for rel in relationships])
+                # Calculate influence based on relationships
+                relationship_influence = 0
+                if node_id in self.relationships:
+                    strong_relationships = sum(
+                        1 for rel in self.relationships[node_id].values() 
+                        if rel.strength > 0.7
+                    )
+                    relationship_influence = min(1.0, strong_relationships / 10.0)
                 
-                # Calculate composite influence score
-                influence_score = (degree_score * 0.4 + 
-                                 betweenness_score * 0.4 + 
-                                 relationship_quality * 0.2)
+                # Combined leadership score
+                leadership_score = (
+                    betweenness_score * 0.4 + 
+                    degree_score * 0.3 + 
+                    relationship_influence * 0.3
+                )
                 
-                self.influence_network[node] = influence_score
+                self.influence_network[node_id] = leadership_score
                 
-                # Identify leaders
-                if influence_score > min_influence_threshold:
-                    self.leaders.add(node)
+                if leadership_score >= min_influence_threshold:
+                    self.leaders.add(node_id)
                     
-        except Exception:
-            pass
+        except Exception as e:
+            error_handler.handle_social_network_error('identify_leaders', e)
+            self.leaders.clear()
     
     def get_network_metrics(self) -> Dict[str, float]:
-        """Calculate comprehensive network metrics"""
-        if not self.interaction_graph.nodes():
-            return {'density': 0, 'clustering': 0, 'diameter': 0, 'components': 0}
-        
+        """Get network metrics with error handling"""
         try:
-            # Basic metrics
-            density = nx.density(self.interaction_graph)
+            if len(self.interaction_graph.nodes()) == 0:
+                return {
+                    'density': 0.0,
+                    'clustering': 0.0,
+                    'average_path_length': 0.0,
+                    'number_of_communities': 0,
+                    'number_of_leaders': 0,
+                    'network_cohesion': 0.0
+                }
             
-            # Clustering coefficient
-            undirected = self.interaction_graph.to_undirected()
-            clustering = nx.average_clustering(undirected)
+            # Calculate basic metrics safely
+            density = safe_execute(
+                lambda: nx.density(self.interaction_graph),
+                fallback_value=0.0
+            )
             
-            # Diameter (for largest connected component)
-            if nx.is_connected(undirected):
-                diameter = nx.diameter(undirected)
-            else:
-                largest_cc = max(nx.connected_components(undirected), key=len)
-                diameter = nx.diameter(undirected.subgraph(largest_cc))
+            clustering = safe_execute(
+                lambda: nx.average_clustering(self.interaction_graph.to_undirected()),
+                fallback_value=0.0
+            )
             
-            # Number of connected components
-            components = nx.number_connected_components(undirected)
+            # Calculate average path length for connected components
+            avg_path_length = 0.0
+            try:
+                if nx.is_connected(self.interaction_graph.to_undirected()):
+                    avg_path_length = nx.average_shortest_path_length(
+                        self.interaction_graph.to_undirected()
+                    )
+                else:
+                    # Calculate for largest connected component
+                    largest_cc = max(
+                        nx.connected_components(self.interaction_graph.to_undirected()),
+                        key=len
+                    )
+                    if len(largest_cc) > 1:
+                        subgraph = self.interaction_graph.subgraph(largest_cc).to_undirected()
+                        avg_path_length = nx.average_shortest_path_length(subgraph)
+            except:
+                avg_path_length = 0.0
             
             return {
                 'density': density,
                 'clustering': clustering,
-                'diameter': diameter,
-                'components': components,
-                'nodes': len(self.interaction_graph.nodes()),
-                'edges': len(self.interaction_graph.edges()),
-                'communities': len(self.communities),
-                'leaders': len(self.leaders)
+                'average_path_length': avg_path_length,
+                'number_of_communities': len(self.communities),
+                'number_of_leaders': len(self.leaders),
+                'network_cohesion': self.calculate_social_cohesion()
             }
             
-        except Exception:
-            return {'density': 0, 'clustering': 0, 'diameter': 0, 'components': 0}
+        except Exception as e:
+            error_handler.handle_social_network_error('get_network_metrics', e)
+            return {
+                'density': 0.0,
+                'clustering': 0.0,
+                'average_path_length': 0.0,
+                'number_of_communities': 0,
+                'number_of_leaders': 0,
+                'network_cohesion': 0.0
+            }
+    
+    def get_network_density(self) -> float:
+        """Get network density safely"""
+        try:
+            if len(self.interaction_graph.nodes()) == 0:
+                return 0.0
+            return nx.density(self.interaction_graph)
+        except Exception as e:
+            error_handler.handle_social_network_error('get_network_density', e)
+            return 0.0
     
     def get_individual_network_position(self, individual_id: int) -> Dict[str, float]:
         """Get network position metrics for an individual"""
