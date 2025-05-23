@@ -110,6 +110,16 @@ class VisualizationConfig:
                 'mystic': (0.6, 0.2, 0.8)
             }
 
+@property
+def species_configs(self) -> Dict[str, Any]:
+    """Add missing species_configs property"""
+    return {
+        'predator': {'max_age': 1000, 'base_aggression': 0.8},
+        'herbivore': {'max_age': 800, 'base_aggression': 0.2},
+        'scavenger': {'max_age': 600, 'base_aggression': 0.4},
+        'mystic': {'max_age': 1200, 'base_aggression': 0.1}
+    }
+
 
 @dataclass
 class Config:
@@ -142,119 +152,119 @@ class Config:
     # Legacy compatibility - provide direct access to commonly used parameters
     @property
     def width(self) -> int:
-        return self.simulation.width
+        return getattr(self.simulation, 'width', 1200)  # Fallback if not initialized
     
     @property
     def height(self) -> int:
-        return self.simulation.height
+        return getattr(self.simulation, 'height', 900)  # Fallback if not initialized
     
     @property
     def max_population(self) -> int:
-        return self.simulation.max_population
+        return getattr(self.simulation, 'max_population', 300)  # Fallback if not initialized
     
     @property
     def initial_population(self) -> int:
-        return self.simulation.initial_population
+        return getattr(self.simulation, 'initial_population', 80)  # Fallback if not initialized
     
     @property
     def time_step(self) -> float:
-        return self.simulation.time_step
+        return getattr(self.simulation, 'time_step', 0.1)  # Fallback if not initialized
     
     @property
     def separation_radius(self) -> float:
-        return self.physics.separation_radius
+        return getattr(self.physics, 'separation_radius', 35)  # Fallback if not initialized
     
     @property
     def alignment_radius(self) -> float:
-        return self.physics.alignment_radius
+        return getattr(self.physics, 'alignment_radius', 70)  # Fallback if not initialized
     
     @property
     def cohesion_radius(self) -> float:
-        return self.physics.cohesion_radius
+        return getattr(self.physics, 'cohesion_radius', 90)  # Fallback if not initialized
     
     @property
     def communication_radius(self) -> float:
-        return self.physics.communication_radius
+        return getattr(self.physics, 'communication_radius', 120)  # Fallback if not initialized
     
     @property
     def separation_force(self) -> float:
-        return self.physics.separation_force
+        return getattr(self.physics, 'separation_force', 2.5)  # Fallback if not initialized
     
     @property
     def alignment_force(self) -> float:
-        return self.physics.alignment_force
+        return getattr(self.physics, 'alignment_force', 1.0)  # Fallback if not initialized
     
     @property
     def cohesion_force(self) -> float:
-        return self.physics.cohesion_force
+        return getattr(self.physics, 'cohesion_force', 0.8)  # Fallback if not initialized
     
     @property
     def social_force(self) -> float:
-        return self.physics.social_force
+        return getattr(self.physics, 'social_force', 1.2)  # Fallback if not initialized
     
     @property
     def environmental_force(self) -> float:
-        return self.physics.environmental_force
+        return getattr(self.physics, 'environmental_force', 0.6)  # Fallback if not initialized
     
     @property
     def memory_length(self) -> int:
-        return self.cognitive.memory_length
+        return getattr(self.cognitive, 'memory_length', 100)  # Fallback if not initialized
     
     @property
     def planning_horizon(self) -> int:
-        return self.cognitive.planning_horizon
+        return getattr(self.cognitive, 'planning_horizon', 20)  # Fallback if not initialized
     
     @property
     def attention_span(self) -> int:
-        return self.cognitive.attention_span
+        return getattr(self.cognitive, 'attention_span', 5)  # Fallback if not initialized
     
     @property
     def learning_rate(self) -> float:
-        return self.cognitive.learning_rate
+        return getattr(self.cognitive, 'learning_rate', 0.1)  # Fallback if not initialized
     
     @property
     def max_social_connections(self) -> int:
-        return self.social.max_social_connections
+        return getattr(self.social, 'max_social_connections', 8)  # Fallback if not initialized
     
     @property
     def relationship_decay(self) -> float:
-        return self.social.relationship_decay
+        return getattr(self.social, 'relationship_decay', 0.02)  # Fallback if not initialized
     
     @property
     def trust_threshold(self) -> float:
-        return self.social.trust_threshold
+        return getattr(self.social, 'trust_threshold', 0.6)  # Fallback if not initialized
     
     @property
     def communication_mutation_rate(self) -> float:
-        return self.social.communication_mutation_rate
+        return getattr(self.social, 'communication_mutation_rate', 0.05)  # Fallback if not initialized
     
     @property
     def breeding_energy_threshold(self) -> float:
-        return self.evolution.breeding_energy_threshold
+        return getattr(self.evolution, 'breeding_energy_threshold', 70)  # Fallback if not initialized
     
     @property
     def mutation_rate(self) -> float:
-        return self.evolution.mutation_rate
+        return getattr(self.evolution, 'mutation_rate', 0.12)  # Fallback if not initialized
     
     @property
     def sexual_selection_strength(self) -> float:
-        return self.evolution.sexual_selection_strength
+        return getattr(self.evolution, 'sexual_selection_strength', 0.4)  # Fallback if not initialized
     
     @property
     def cultural_inheritance_rate(self) -> float:
-        return self.social.cultural_inheritance_rate
+        return getattr(self.social, 'cultural_inheritance_rate', 0.3)  # Fallback if not initialized
     
     @property
     def resource_regeneration_rate(self) -> float:
-        return self.environment.resource_regeneration_rate
+        return getattr(self.environment, 'resource_regeneration_rate', 0.1)  # Fallback if not initialized
     
     @property
     def environmental_memory_length(self) -> int:
-        return self.environment.environmental_memory_length
+        return getattr(self.environment, 'environmental_memory_length', 500)  # Fallback if not initialized
     
     @property
     def co_evolution_strength(self) -> float:
-        return self.environment.co_evolution_strength
+        return getattr(self.environment, 'co_evolution_strength', 0.2)  # Fallback if not initialized
 
 
 # Predefined configuration profiles

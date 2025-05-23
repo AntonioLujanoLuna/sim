@@ -5,6 +5,7 @@ This script sets up and runs the complete simulation with all systems integrated
 """
 
 import argparse
+import os
 import sys
 import time
 from typing import Optional
@@ -13,6 +14,8 @@ from .config import Config, DEMO_CONFIG, RESEARCH_CONFIG, PERFORMANCE_CONFIG
 from .core.simulation import EmergentIntelligenceSimulation
 from .visualization.main_display import create_visualization
 
+# Add this at the top of main.py to handle import paths
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def parse_arguments():
     """Parse command line arguments"""

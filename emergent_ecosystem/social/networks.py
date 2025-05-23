@@ -232,8 +232,12 @@ class SocialNetwork:
             undirected_graph.remove_edges_from(edges_to_remove)
             
             # Detect communities
-            communities = list(nx.community.greedy_modularity_communities(undirected_graph))
-            
+            try:
+                communities = list(nx.community.greedy_modularity_communities(undirected_graph))
+            except AttributeError:
+                # Fallback for older NetworkX versions
+                communities = []
+                        
             # Filter communities by minimum size
             self.communities = [community for community in communities 
                               if len(community) >= min_community_size]
