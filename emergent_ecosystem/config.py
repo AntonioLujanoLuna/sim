@@ -12,8 +12,8 @@ from typing import Dict, Any
 @dataclass
 class SimulationConfig:
     """Core simulation parameters"""
-    width: int = 1200
-    height: int = 900
+    width: int = 1000
+    height: int = 750
     max_population: int = 300
     initial_population: int = 80
     time_step: float = 0.1
