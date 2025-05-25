@@ -5,6 +5,7 @@ This module implements the main individual agent class that integrates
 all cognitive modules, social systems, and environmental interactions.
 """
 
+import time
 import numpy as np
 import random
 from collections import deque, defaultdict
@@ -32,6 +33,8 @@ class EnhancedIndividual:
         self.vx = random.uniform(-1, 1)
         self.vy = random.uniform(-1, 1)
         self.species_name = species_name
+        self.perception_time = 0
+        self.perception_count = 0
         
         # Cognitive architecture
         self.attention = AttentionModule(self.config.attention_span)
@@ -143,8 +146,11 @@ class EnhancedIndividual:
         
         return np.clip(base_val, min_val, max_val)
     
-    def perceive_environment(self, others: List['EnhancedIndividual'], environment, social_network):
-        """Advanced environmental perception with attention filtering"""
+    def perceive_environment(self, others: List['EnhancedIndividual'], environment, social_network, 
+                       spatial_grid=None, use_spatial_optimization=True):
+        """Advanced environmental perception with attention filtering and spatial optimization"""
+        import time
+        start_time = time.time()
         raw_perception = {
             'nearby_individuals': [],
             'environmental_features': [],
@@ -153,25 +159,44 @@ class EnhancedIndividual:
             'opportunity_signals': []
         }
         
-        # Perceive nearby individuals
-        for other in others:
+        # Use spatial optimization if available
+        if use_spatial_optimization and spatial_grid is not None:
+            # Create a dictionary for fast lookup
+            individuals_dict = {ind.id: ind for ind in others}
+            # Get only nearby individuals using spatial grid
+            nearby_others = spatial_grid.get_nearby_individuals(
+                self.x, self.y, self.config.communication_radius, individuals_dict
+            )
+        else:
+            # Fallback to checking all individuals
+            nearby_others = []
+            for other in others:
+                if other.id != self.id:
+                    dx = other.x - self.x
+                    dy = other.y - self.y
+                    distance = np.sqrt(dx**2 + dy**2)
+                    if distance < self.config.communication_radius:
+                        nearby_others.append(other)
+        
+        # Perceive nearby individuals (now only processes nearby ones)
+        for other in nearby_others:
             if other.id != self.id:
                 dx = other.x - self.x
                 dy = other.y - self.y
                 distance = np.sqrt(dx**2 + dy**2)
                 
-                if distance < self.config.communication_radius:
-                    perception = {
-                        'individual': other,
-                        'distance': distance,
-                        'relationship_strength': social_network.get_relationship_strength(self.id, other.id),
-                        'species': other.species_name,
-                        'energy_level': other.energy / 100.0,
-                        'active_signals': other.active_signals.copy(),
-                        'relative_position': (dx, dy)
-                    }
-                    raw_perception['nearby_individuals'].append(perception)
+                perception = {
+                    'individual': other,
+                    'distance': distance,
+                    'relationship_strength': social_network.get_relationship_strength(self.id, other.id),
+                    'species': other.species_name,
+                    'energy_level': other.energy / 100.0,
+                    'active_signals': other.active_signals.copy(),
+                    'relative_position': (dx, dy)
+                }
+                raw_perception['nearby_individuals'].append(perception)
         
+        # Rest of the method remains the same...
         # Perceive environmental patches
         if hasattr(environment, 'get_nearby_patches'):
             nearby_patches = environment.get_nearby_patches(self.x, self.y, 50)
@@ -208,7 +233,8 @@ class EnhancedIndividual:
         
         self.attention.update_attention(stimuli_salience, self.current_goal)
         filtered_perception = self.attention.get_filtered_perception(raw_perception)
-        
+        self.perception_time += time.time() - start_time
+        self.perception_count += 1
         return filtered_perception
     
     def make_decisions(self, perception: Dict[str, Any]):
@@ -402,7 +428,7 @@ class EnhancedIndividual:
     def update_physics(self, others: List['EnhancedIndividual'], environment, social_network):
         """Update position and state with enhanced cognitive processing"""
         # Perceive environment
-        perception = self.perceive_environment(others, environment, social_network)
+        perception = self.perceive_environment(others, environment, social_network, spatial_grid)
         
         # Make decisions
         plan, confidence = self.make_decisions(perception)

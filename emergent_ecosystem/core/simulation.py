@@ -111,13 +111,23 @@ class EmergentIntelligenceSimulation:
         for individual in self.individuals[:]:
             try:
                 # Use optimized perception system
-                perception = self.performance_optimizer.optimize_individual_perception(
-                    individual, self.individuals, self.environment, self.social_network
+                individual.update_physics(
+                self.individuals, 
+                self.environment, 
+                self.social_network,
+                self.performance_optimizer.spatial_grid  # Pass spatial grid here
+                )
+            
+                # Use the individual's own perception for interactions
+                perception = individual.perceive_environment(
+                    self.individuals, 
+                    self.environment, 
+                    self.social_network,
+                    self.performance_optimizer.spatial_grid
                 )
                 
-                # Update individual with optimized perception
-                individual.make_decisions(perception)
-                individual.update_physics(self.individuals, self.environment, self.social_network)
+                # Record interactions...
+                nearby = perception.get('nearby_individuals', [])
                 
                 # Record interactions for social network updates (optimized)
                 nearby = perception.get('nearby_individuals', [])
